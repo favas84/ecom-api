@@ -19,14 +19,22 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'status', 'customer']
 
     def validate_status(self, value):
+        """
+        Validate the status of a product.
+        """
         created_on = self.instance.created_on if self.instance else None
+
         if value is False:
+            # Get the registered date from the instance or use the
+            # current date if instance is None
             if created_on:
                 registered_date = created_on.date()
             else:
                 registered_date = date.today()
+
             current_date = datetime.now().date()
             delta = current_date - registered_date
+
             if delta < timedelta(days=60):
                 raise serializers.ValidationError(
                     "Product cannot be made inactive within 2 months of "
@@ -35,18 +43,27 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        """
+        Create and return a new Product instance.
+        """
         customer = validated_data.pop('customer')
         customer_id = customer.id
         product = Product.objects.create(customer_id=customer_id,
                                          **validated_data)
+
         return product
 
     def update(self, instance, validated_data):
+        """
+        Update and return Product instance.
+        """
         customer = validated_data.pop('customer')
         customer_id = customer.id
         instance.customer_id = customer_id
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         instance.save()
+
         return instance
